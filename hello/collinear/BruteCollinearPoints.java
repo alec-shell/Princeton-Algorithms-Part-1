@@ -1,17 +1,102 @@
 package collinear;
 
 public class BruteCollinearPoints {
-    private Point[] points;
+    private Point[] copy;
+    private int segmentCount = 0;
+    private LineSegment[] segments = new LineSegment[1];
 
     public BruteCollinearPoints(Point[] points) {
-        this.points = points;
+        // check for null inputs
+        if (points == null) throw new IllegalArgumentException();
+        copy = new Point[points.length];
+        for (int i = 0; i < points.length; i++) {
+            if (points[i] == null) throw new IllegalArgumentException();
+            copy[i] = points[i];
+        }
+        // sort copy and check for duplicates
+        Merge.sort(copy);
+        for (int i = 1; i < copy.length; i++) {
+            if (copy[i].compareTo(copy[i - 1]) == 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+        // look for valid line segments
+        validateSegments();
     } // end constructor
 
-    public int numberOfSegments() {
+    private void validateSegments() {
+        for (int i = 0; i < copy.length - 3; i++) {
+            for (int j = i + 1; j < copy.length - 2; j++) {
+                for (int k = j + 1; k < copy.length - 1; k++) {
+                    double ijSlope = copy[i].slopeTo(copy[j]);
+                    double jkSlope = copy[j].slopeTo(copy[k]);
+                    if (ijSlope != jkSlope) continue;
+                    for (int l = k + 1; l < copy.length; l++) {
+                        double klSlope = copy[k].slopeTo(copy[l]);
+                        if (klSlope == jkSlope) {
+                            segmentCount++;
+                            resizeArray();
+                            segments[segmentCount - 1] = new LineSegment(copy[i], copy[l]);
+                        }
+                    }
+                }
+            }
+        }
+    } // end validateSegments
 
+    private void resizeArray() {
+        if (segmentCount > segments.length) {
+            LineSegment[] temp = new LineSegment[segments.length * 2];
+            for (int i = 0; i < segments.length; i++) {
+                temp[i] = segments[i];
+            }
+            segments = temp;
+        }
+    } // end resizeArray
+
+    public int numberOfSegments() {
+        return segmentCount;
     } // end numberOfSegments
 
     public LineSegment[] segments() {
-
+        return segments;
     } // end segments
+
+    private static class Merge {
+        private static Point[] aux;
+
+        public static void sort(Point[] points) {
+            aux = new Point[points.length];
+            sort(points, 0, points.length - 1);
+        }
+
+        private static void sort(Point[] points, int lo, int hi) {
+            if (lo == hi) return;
+            else {
+                int mid = lo + (hi - lo) / 2;
+                sort(points, lo, mid);
+                sort(points, mid + 1, hi);
+                if (!less(points[mid], points[mid + 1])) merge(points, lo, mid, hi);
+            }
+        } // end sort
+
+        private static boolean less(Point a, Point b) {
+            return a.compareTo(b) < 0;
+        } // end less
+
+        private static void merge(Point[] points, int lo, int mid, int hi) {
+            int left = lo;
+            int right = mid + 1;
+            for (int i = lo; i <= hi; i++) {
+                if (left > mid) aux[i] = points[right++];
+                else if (right > hi) aux[i] = points[left++];
+                else if (less(points[left], points[right])) aux[i] = points[left++];
+                else aux[i] = points[right++];
+            }
+            for (int i = lo; i <= hi; i++) {
+                points[i] = aux[i];
+            }
+        } // end merge
+
+    } // end Merge class
 } // end BruteCollinearPoints
