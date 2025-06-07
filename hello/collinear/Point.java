@@ -8,8 +8,11 @@
  *
  ******************************************************************************/
 
-import java.util.Comparator;
+package collinear;
+
 import edu.princeton.cs.algs4.StdDraw;
+
+import java.util.Comparator;
 
 public class Point implements Comparable<Point> {
 
@@ -19,8 +22,8 @@ public class Point implements Comparable<Point> {
     /**
      * Initializes a new point.
      *
-     * @param  x the <em>x</em>-coordinate of the point
-     * @param  y the <em>y</em>-coordinate of the point
+     * @param x the <em>x</em>-coordinate of the point
+     * @param y the <em>y</em>-coordinate of the point
      */
     public Point(int x, int y) {
         /* DO NOT MODIFY */
@@ -55,7 +58,7 @@ public class Point implements Comparable<Point> {
      * Double.POSITIVE_INFINITY if the line segment is vertical;
      * and Double.NEGATIVE_INFINITY if (x0, y0) and (x1, y1) are equal.
      *
-     * @param  that the other point
+     * @param that the other point
      * @return the slope between this point and the specified point
      */
     public double slopeTo(Point that) {
@@ -75,12 +78,12 @@ public class Point implements Comparable<Point> {
      * Formally, the invoking point (x0, y0) is less than the argument point
      * (x1, y1) if and only if either y0 < y1 or if y0 = y1 and x0 < x1.
      *
-     * @param  that the other point
+     * @param that the other point
      * @return the value <tt>0</tt> if this point is equal to the argument
-     *         point (x0 = x1 and y0 = y1);
-     *         a negative integer if this point is less than the argument
-     *         point; and a positive integer if this point is greater than the
-     *         argument point
+     * point (x0 = x1 and y0 = y1);
+     * a negative integer if this point is less than the argument
+     * point; and a positive integer if this point is greater than the
+     * argument point
      */
     public int compareTo(Point that) {
         /* YOUR CODE HERE */
@@ -100,11 +103,24 @@ public class Point implements Comparable<Point> {
      */
     public Comparator<Point> slopeOrder() {
         /* YOUR CODE HERE */
-        return PointComparator
+        return new PointComparator(this);
     } // end slopeOrder
 
-    private class PointComparator implements Comparator<Point> {
+    class PointComparator implements Comparator<Point> {
+        private Point zero;
 
+        public PointComparator(Point zero) {
+            this.zero = zero;
+        } // end constructor
+
+        public int compare(Point one, Point two) {
+            double zeroToOne = zero.slopeTo(one);
+            double zeroToTwo = zero.slopeTo(two);
+
+            if (zeroToOne < zeroToTwo) return -1;
+            if (zeroToOne > zeroToTwo) return 1;
+            return 0;
+        } // end compare
     } // end PointComparator class
 
     /**
@@ -124,5 +140,20 @@ public class Point implements Comparable<Point> {
      */
     public static void main(String[] args) {
         /* YOUR CODE HERE */
+        Point test1 = new Point(0, 0);
+        Point test2 = new Point(1, 1);
+        Point test3 = new Point(2, 2);
+
+        test1.draw();
+        test2.draw();
+        test3.draw();
+        test1.drawTo(test2);
+        test1.drawTo(test3);
+        edu.princeton.cs.algs4.StdOut.println(test1.slopeTo(test1));
+        edu.princeton.cs.algs4.StdOut.println(test1.slopeTo(test2));
+        edu.princeton.cs.algs4.StdOut.println(test1.compareTo(test1));
+        edu.princeton.cs.algs4.StdOut.println(test1.compareTo(test2));
+        Comparator<Point> test1C = test1.slopeOrder();
+        edu.princeton.cs.algs4.StdOut.println(test1C.compare(test2, test3));
     } // end main
 } // end Point class
