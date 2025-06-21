@@ -1,15 +1,14 @@
 package puzzle8;
 
 import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.Arrays;
-import java.util.Random;
 
 public class Board {
 
-    Random rand = new Random();
-    int[][] board;
-    int N;
+    final int[][] board;
+    final int N;
 
 
     public Board(int[][] tiles) {
@@ -117,11 +116,11 @@ public class Board {
     } // end exchange
 
     public Board twin() {
-        int i = rand.nextInt(N);
-        int j = rand.nextInt(N);
-        while (i == j || board[i][j] == 0 || board[j][i] == 0) {
-            i = rand.nextInt(N);
-            j = rand.nextInt(N);
+        int i = 0;
+        int j = 1;
+        if (board[i][j] == 0 || board[j][i] == 0) {
+            i++;
+            j++;
         }
         exchange(i, j, j, i);
         Board twin = new Board(board);
@@ -130,23 +129,29 @@ public class Board {
     } // end twin
 
     public static void main(String[] args) {
+        // test array
         int[][] array = new int[][] {
                 { 1, 2, 3 },
                 { 4, 5, 6 },
                 { 7, 8, 0 }
         };
+
+        // create two identical test boards
         Board test = new Board(array);
         Board equalTest = new Board(array);
-        System.out.println("TO STRING: " + test.toString());
-        System.out.println("HAMMING: " + test.hamming());
-        System.out.println("MANHATTAN: " + test.manhattan());
-        System.out.println("DIMENSION: " + test.dimension());
-        System.out.println("IS GOAL?: " + test.isGoal());
-        System.out.println(test.twin().toString());
+
+        // Test all function outputs and send return values to stdIO
+        StdOut.println("TO STRING: \n" + test.toString());
+        StdOut.println("HAMMING: " + test.hamming());
+        StdOut.println("MANHATTAN: " + test.manhattan());
+        StdOut.println("DIMENSION: " + test.dimension());
+        StdOut.println("IS GOAL?: " + test.isGoal());
+        StdOut.println("Twin: \n" + test.twin().toString());
+
         Iterable<Board> iter = test.neighbors();
-        System.out.println("POSSIBLE MOVES: ");
+        StdOut.println("POSSIBLE MOVES: ");
         for (Board b : iter) System.out.println(b.toString());
-        System.out.println("EQUALS (T): " + test.equals(equalTest));
-        System.out.println("EQUALS (F): " + test.equals(test.twin()));
+        StdOut.println("EQUALS (T): " + test.equals(equalTest));
+        StdOut.println("EQUALS (F): " + test.equals(test.twin()));
     } // end main
 } // end Board class
