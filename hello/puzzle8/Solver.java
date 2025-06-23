@@ -1,13 +1,12 @@
 package puzzle8;
 
-import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.MinPQ;
 import edu.princeton.cs.algs4.Stack;
 import edu.princeton.cs.algs4.StdOut;
 
 public class Solver {
-    MinPQ<Node> initPQ = new MinPQ<>();
-    MinPQ<Node> twinPQ = new MinPQ<>();
+    private MinPQ<Node> initPQ = new MinPQ<>();
+    private MinPQ<Node> twinPQ = new MinPQ<>();
     private boolean solvable = true;
 
     public Solver(Board init) {
@@ -25,7 +24,9 @@ public class Solver {
         Node prev = PQ.delMin();
         Iterable<Board> neighbors = prev.current.neighbors();
         for (Board n : neighbors) {
-            if (n.equals(prev.previous.current)) continue;
+            if (!prev.isLast()) {
+                if (n.equals(prev.previous.current)) continue;
+            }
             PQ.insert(new Node(n, prev, prev.moves + 1));
         }
     } // end iterate
@@ -79,6 +80,7 @@ public class Solver {
         } // end compareTo
     } // end Node class
 
+    /*
     public static void main(String[] args) {
         // create init board from file
         In in = new In(args[0]);
@@ -101,4 +103,37 @@ public class Solver {
             for (Board board : solver.solution()) StdOut.println(board);
         }
     } // end main
+
+     */
+
+    public static void main(String[] args) {
+        int[][] a = {
+                { 2, 1, 3, 4 },
+                { 5, 6, 7, 8 },
+                { 9, 10, 11, 12 },
+                { 12, 15, 14, 0 }
+        };
+
+        int[][] b = {
+                { 0, 1, 3 },
+                { 4, 2, 5 },
+                { 7, 8, 6 }
+        };
+
+        int[][] c = {
+                { 3, 0 },
+                { 2, 1 }
+        };
+
+        Board testBoard = new Board(c);
+
+        Solver test = new Solver(testBoard);
+        if (!test.isSolvable()) StdOut.println("Board is unsolvable");
+        else {
+            StdOut.println("Moves: " + test.moves());
+            Iterable<Board> iter = test.solution();
+            for (Board board : iter) StdOut.println(board);
+        }
+    } // end main
+
 } // end Solver class

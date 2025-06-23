@@ -7,8 +7,8 @@ import java.util.Arrays;
 
 public class Board {
 
-    final int[][] board;
-    final int N;
+    private final int[][] board;
+    private final int N;
 
 
     public Board(int[][] tiles) {
@@ -117,14 +117,12 @@ public class Board {
 
     public Board twin() {
         int i = 0;
-        int j = 1;
-        if (board[i][j] == 0 || board[j][i] == 0) {
-            i++;
-            j++;
-        }
-        exchange(i, j, j, i);
+        int j = 0;
+        if (board[i][j] == 0) i++;
+        if (board[i][j + 1] == 0) i++;
+        exchange(i, j, i, j + 1);
         Board twin = new Board(board);
-        exchange(i, j, j, i);
+        exchange(i, j, i, j + 1);
         return twin;
     } // end twin
 
@@ -136,9 +134,14 @@ public class Board {
                 { 7, 8, 0 }
         };
 
+        int[][] twoXtwo = {
+                { 1, 0 },
+                { 3, 2 }
+        };
+
         // create two identical test boards
-        Board test = new Board(array);
-        Board equalTest = new Board(array);
+        Board test = new Board(twoXtwo);
+        Board equalTest = new Board(twoXtwo);
 
         // Test all function outputs and send return values to stdIO
         StdOut.println("TO STRING: \n" + test.toString());
