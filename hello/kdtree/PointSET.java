@@ -25,10 +25,12 @@ public class PointSET {
     } // end size
 
     public void insert(Point2D p) {
+        if (p == null) throw new IllegalArgumentException();
         pointSet.add(p);
     } // end insert
 
     public boolean contains(Point2D p) {
+        if (p == null) throw new IllegalArgumentException();
         return pointSet.contains(p);
     }
 
@@ -37,6 +39,7 @@ public class PointSET {
     } // end draw
 
     public Iterable<Point2D> range(RectHV rect) {
+        if (rect == null) throw new IllegalArgumentException();
         Queue<Point2D> points = new Queue<>();
         for (Point2D p : pointSet) {
             if (rect.contains(p)) points.enqueue(p);
@@ -45,6 +48,7 @@ public class PointSET {
     } // end range
 
     public Point2D nearest(Point2D p) {
+        if (p == null) throw new IllegalArgumentException();
         Point2D nearest = null;
         for (Point2D n : pointSet) {
             if (n.equals(p)) continue;
@@ -86,7 +90,7 @@ public class PointSET {
         StdOut.println("POINTS CONTAINED IN RECTANGLE: ");
         for (Point2D p : contained) StdOut.println(p);
 
-        // draw point set && rectangle
+        // draw test set and test rectangle
         test.draw();
         testRect.draw();
     } // end main
