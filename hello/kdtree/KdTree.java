@@ -60,18 +60,16 @@ public class KdTree {
     private RectHV buildRect(Node parent, boolean isGreater) {
 
         if (parent.isVertical) {
-            if (isGreater) {
+            if (isGreater)
                 return new RectHV(parent.point.x(), parent.rect.ymin(), parent.rect.xmax(),
                                   parent.rect.ymax());
-            }
             return new RectHV(parent.rect.xmin(), parent.rect.ymin(), parent.point.x(),
                               parent.rect.ymax());
         }
         else {
-            if (isGreater) {
+            if (isGreater)
                 return new RectHV(parent.rect.xmin(), parent.point.y(), parent.rect.xmax(),
                                   parent.rect.ymax());
-            }
             return new RectHV(parent.rect.xmin(), parent.rect.ymin(), parent.rect.xmax(),
                               parent.point.y());
         }
@@ -120,6 +118,7 @@ public class KdTree {
     private void rangeHelper(RectHV rect, Node node, Queue<Point2D> iter) {
         if (node == null) return;
         if (rect.contains(node.point)) iter.enqueue(node.point);
+
         if (node.lesser != null && node.lesser.rect.intersects(rect))
             rangeHelper(rect, node.lesser, iter);
         if (node.greater != null && node.greater.rect.intersects(rect))
@@ -128,8 +127,44 @@ public class KdTree {
 
     public Point2D nearest(Point2D p) {
         if (p == null) throw new IllegalArgumentException();
-        return null;
+        return nearestHelper(p, root, root.point);
     } // end nearest
+
+    private Point2D nearestHelper(Point2D p, Node node, Point2D nearest) {
+        // determine current nearest point
+        if (node.point.distanceTo(p) < nearest.distanceTo(p) && !node.point.equals(p))
+            nearest = node.point;
+        // return nearest if leaf node
+        if (node.lesser == null && node.greater == null) return nearest;
+        // calculate distances of subtrees' RectHV to 'p'
+        Double distA = null;
+        Double distB = null;
+        if (node.lesser != null) distA = node.lesser.rect.distanceTo(p);
+        if (node.greater != null) distB = node.greater.rect.distanceTo(p);
+        // if both subtrees != null
+        if (distA != null && distB != null) {
+            if (distA < distB && distA < p.distanceTo(nearest)) {
+                nearest = nearestHelper(p, node.lesser, nearest);
+                if (nearest.distanceTo(p) > node.greater.rect.distanceTo(p))
+                    return nearestHelper(p, node.greater, nearest);
+            }
+            else if (distB < p.distanceTo(nearest)) {
+                nearest = nearestHelper(p, node.greater, nearest);
+                if (nearest.distanceTo(p) > node.lesser.rect.distanceTo(p))
+                    return nearestHelper(p, node.greater, nearest);
+            }
+            return nearest;
+        }
+        // if only one node present {
+        if (distA != null) {
+            if (distA < p.distanceTo(nearest)) return nearestHelper(p, node.lesser, nearest);
+            else return nearest;
+        }
+        else {
+            if (distB < p.distanceTo(nearest)) return nearestHelper(p, node.greater, nearest);
+            else return nearest;
+        }
+    } // end nearestHelper
 
     private class Node implements Comparable<Point2D> {
         private Point2D point;
@@ -178,6 +213,15 @@ public class KdTree {
 
         StdOut.println("SIZE: " + test.size());
 
+        Point2D testP = new Point2D(.25, .5);
+        Point2D nearest = test.nearest(testP);
+        StdOut.println("NEAREST TO (.25, .5): " + nearest.toString());
+
         test.draw();
+        StdDraw.setPenColor(Color.ORANGE);
+        StdDraw.setPenRadius(.01);
+        StdDraw.point(testP.x(), testP.y());
+        StdDraw.setPenColor(Color.GREEN);
+        StdDraw.point(nearest.x(), nearest.y());
     } // end main
 } // end KdTree class
