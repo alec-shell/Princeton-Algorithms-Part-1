@@ -1,11 +1,13 @@
 package kdtree;
 
 import edu.princeton.cs.algs4.Point2D;
+import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 
 import java.awt.Color;
+import java.util.Random;
 
 public class KdTree {
     private Node root;
@@ -92,7 +94,10 @@ public class KdTree {
 
     private void draw(Node node) {
         if (node == null) return;
+        StdDraw.setPenColor(Color.BLACK);
+        StdDraw.setPenRadius(0.01);
         StdDraw.point(node.point.x(), node.point.y());
+        StdDraw.setPenRadius();
         if (node.isVertical) {
             StdDraw.setPenColor(Color.RED);
             StdDraw.line(node.point.x(), node.rect.ymin(), node.point.x(), node.rect.ymax());
@@ -107,8 +112,19 @@ public class KdTree {
 
     public Iterable<Point2D> range(RectHV rect) {
         if (rect == null) throw new IllegalArgumentException();
-        return null;
+        Queue<Point2D> iter = new Queue<>();
+        rangeHelper(rect, root, iter);
+        return iter;
     } // end range
+
+    private void rangeHelper(RectHV rect, Node node, Queue<Point2D> iter) {
+        if (node == null) return;
+        if (rect.contains(node.point)) iter.enqueue(node.point);
+        if (node.lesser != null && node.lesser.rect.intersects(rect))
+            rangeHelper(rect, node.lesser, iter);
+        if (node.greater != null && node.greater.rect.intersects(rect))
+            rangeHelper(rect, node.greater, iter);
+    } // end rangeHelper
 
     public Point2D nearest(Point2D p) {
         if (p == null) throw new IllegalArgumentException();
@@ -147,18 +163,19 @@ public class KdTree {
 
     public static void main(String[] args) {
         KdTree test = new KdTree();
-        Point2D p1 = new Point2D(.5, .5);
-        Point2D p2 = new Point2D(.25, .5);
-        Point2D p3 = new Point2D(.25, .9);
-        Point2D p4 = new Point2D(.75, .4);
-        Point2D p5 = new Point2D(.75, .25);
-        test.insert(p5);
-        test.insert(p2);
-        test.insert(p1);
-        test.insert(p3);
-        test.insert(p4);
-        StdOut.println("CONTAINS(T): " + test.contains(p3));
-        StdOut.println("CONTAINS(F): " + test.contains(new Point2D(11, 10)));
+        Random rand = new Random();
+        int count = 20;
+
+        for (int i = 0; i < count; i++) {
+            test.insert(new Point2D(rand.nextDouble(), rand.nextDouble()));
+        }
+
+        RectHV testRect = new RectHV(0, 0, .5, 1);
+
+        StdOut.println("POINTS CONTAINED IN (0, 0) TO (.5, 1) RECTHV: ");
+        Iterable<Point2D> iter = test.range(testRect);
+        for (Point2D p : iter) StdOut.println(p.toString());
+
         StdOut.println("SIZE: " + test.size());
 
         test.draw();
