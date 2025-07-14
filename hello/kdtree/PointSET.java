@@ -6,6 +6,7 @@ import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 
+import java.awt.Color;
 import java.util.Random;
 import java.util.TreeSet;
 
@@ -51,7 +52,6 @@ public class PointSET {
         if (p == null) throw new IllegalArgumentException();
         Point2D nearest = null;
         for (Point2D n : pointSet) {
-            if (n.equals(p)) continue;
             if (nearest == null) nearest = n;
             else if (p.distanceTo(n) < p.distanceTo(nearest)) nearest = n;
         }
@@ -91,7 +91,12 @@ public class PointSET {
         for (Point2D p : contained) StdOut.println(p);
 
         // draw test set and test rectangle
+
+        StdDraw.setPenRadius(0.01);
         test.draw();
+        StdDraw.setPenColor(Color.CYAN);
         testRect.draw();
+        StdDraw.setPenColor(Color.GREEN);
+        for (Point2D p : contained) StdDraw.point(p.x(), p.y());
     } // end main
 } // end PointSET class
