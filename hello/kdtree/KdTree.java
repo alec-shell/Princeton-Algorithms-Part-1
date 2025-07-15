@@ -76,13 +76,18 @@ public class KdTree {
 
     public boolean contains(Point2D p) {
         if (p == null) throw new IllegalArgumentException();
+        if (root == null) return false;
         return containsHelper(p, root);
     } // end contains
 
     private boolean containsHelper(Point2D p, Node node) {
-        if (node == null) return false;
-        else if (node.point.compareTo(p) == 0) return true;
-        else return containsHelper(p, node.lesser) || containsHelper(p, node.greater);
+        int comp = node.compareTo(p);
+        if (comp == 0) return true;
+        else {
+            if (comp > 0 && node.lesser != null) return containsHelper(p, node.lesser);
+            else if (comp < 0 && node.greater != null) return containsHelper(p, node.greater);
+            else return false;
+        }
     } // end containsHelper
 
     public void draw() {
@@ -126,22 +131,51 @@ public class KdTree {
 
     public Point2D nearest(Point2D p) {
         if (p == null) throw new IllegalArgumentException();
-        return nearestHelper(p, root, root.point);
+        if (root == null) return null;
+        return nearestHelper(p, root, root.point, p.distanceSquaredTo(root.point));
     } // end nearest
 
-    private Point2D nearestHelper(Point2D p, Node node, Point2D nearest) {
+    private Point2D nearestHelper(Point2D p, Node node, Point2D nearest, double dist) {
         if (node == null) return nearest;
-        // is current node RectHV worth searching?
-        if (node.rect.distanceTo(p) > nearest.distanceTo(p)) return nearest;
             // is current node point closer than nearest?
-        else if (node.point.distanceTo(p) < nearest.distanceTo(p)) nearest = node.point;
-        // check subtrees
-        Point2D left = nearestHelper(p, node.lesser, nearest);
-        Point2D right = nearestHelper(p, node.greater, nearest);
-        // return closest point
-        if (left.distanceTo(p) < right.distanceTo(p)) return left;
-        else return right;
+        else if (node.point.distanceSquaredTo(p) < dist) {
+            nearest = node.point;
+            dist = nearest.distanceSquaredTo(p);
+        }
+        // determine side to check first
+        Node primary, secondary;
+        if (favorLesser(p, node)) {
+            primary = node.lesser;
+            secondary = node.greater;
+        }
+        else {
+            primary = node.greater;
+            secondary = node.lesser;
+        }
+        // recurse subtrees as needed
+        if (primary != null && primary.rect.distanceSquaredTo(p) < dist) {
+            nearest = nearestHelper(p, primary, nearest, dist);
+            dist = nearest.distanceSquaredTo(p);
+        }
+
+        if (secondary != null && secondary.rect.distanceSquaredTo(p) < dist) {
+            nearest = nearestHelper(p, secondary, nearest, dist);
+            dist = nearest.distanceSquaredTo(p);
+        }
+        return nearest;
     } // end nearestHelper
+
+    // check if lesser subtree is most likely to contain nearestNeighbor
+    private boolean favorLesser(Point2D p, Node node) {
+        if (node.lesser == null) return false;
+        else if (node.greater == null) return true;
+        else {
+            if (node.lesser.rect.distanceSquaredTo(p) < node.greater.rect.distanceSquaredTo(p))
+                return true;
+            else return false;
+        }
+    } // end checkSubtrees
+
 
     private class Node implements Comparable<Point2D> {
         private Point2D point;
@@ -158,6 +192,8 @@ public class KdTree {
             this.greater = greater;
         } // end constructor
 
+        // custom compareTo method to account for node's axis
+        // used in contains and insert KdTree class methods
         public int compareTo(Point2D that) {
             if (this.point == that) return 0;
             if (isVertical) {
@@ -176,7 +212,7 @@ public class KdTree {
     public static void main(String[] args) {
         KdTree test = new KdTree();
         Random rand = new Random();
-        int count = 20;
+        int count = 50;
 
         for (int i = 0; i < count; i++) {
             test.insert(new Point2D(rand.nextDouble(), rand.nextDouble()));
