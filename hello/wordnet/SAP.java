@@ -24,7 +24,7 @@ public class SAP {
         queue.addLast(v);
         // BFS to root for v
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 if (visitedV[n] == 0) {
                     visitedV[n] = visitedV[current] + 1;
@@ -32,13 +32,14 @@ public class SAP {
             }
         }
 
-        queue.push(w);
+        queue.addLast(w);
         // BFS for w until LCA is found or root
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 if (visitedV[n] > 0) return visitedV[n] + ++visitedW[current];
                 else visitedW[n] = visitedW[current] + 1;
+                queue.addLast(n);
             }
         }
         // if no LCA return -1
@@ -90,10 +91,10 @@ public class SAP {
         // add v IDs to queue and BFS to root
         for (Integer ID : v) {
             distV[ID] = 0;
-            queue.push(ID);
+            queue.addLast(ID);
         }
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 if (distV[n] == 0) {
                     distV[n] = distV[current] + 1;
@@ -106,7 +107,7 @@ public class SAP {
         for (Integer ID : w) {
             if (distV[ID] != 0) return distV[ID];
             distW[ID] = 0;
-            queue.push(ID);
+            queue.addLast(ID);
         }
         while (!queue.isEmpty()) {
             int current = queue.removeFirst();
@@ -151,7 +152,7 @@ public class SAP {
         for (Integer ID : w) {
             if (ancestorsV[ID] != 0) return ID;
             ancestorsW[ID]++;
-            queue.push(ID);
+            queue.addLast(ID);
         }
         // perform BFS on w until LCA found or root
         while (!queue.isEmpty()) {
