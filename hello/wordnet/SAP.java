@@ -17,11 +17,12 @@ public class SAP {
             throw new IllegalArgumentException("Vertices must be from 0 to " + (G.V() - 1));
         if (v == w) return 0;
 
-        int[] visitedV = new int[G.V() - 1], visitedW = new int[G.V() - 1];
+        int[] visitedV = new int[G.V()], visitedW = new int[G.V()];
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         visitedV[v] = 0;
         visitedW[w] = 0;
-        queue.push(v);
+        queue.addLast(v);
+        // BFS to root for v
         while (!queue.isEmpty()) {
             int current = queue.pop();
             for (Integer n : G.adj(current)) {
@@ -32,6 +33,7 @@ public class SAP {
         }
 
         queue.push(w);
+        // BFS for w until LCA is found or root
         while (!queue.isEmpty()) {
             int current = queue.pop();
             for (Integer n : G.adj(current)) {
@@ -39,6 +41,7 @@ public class SAP {
                 else visitedW[n] = visitedW[current] + 1;
             }
         }
+        // if no LCA return -1
         return -1;
     } // length()
 
@@ -47,22 +50,25 @@ public class SAP {
             throw new IllegalArgumentException("Vertices must be from 0 to " + (G.V() - 1));
         if (v == w) return v;
 
-        int[] visitedV = new int[G.V() - 1];
+        int[] visitedV = new int[G.V()], visitedW = new int[G.V()];
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         visitedV[v] = 1;
-        queue.push(v);
+        queue.addLast(v);
         // BFS from v to root
         while (!queue.isEmpty()) {
-            Iterable<Integer> neighbors = G.adj(queue.pop());
+            Iterable<Integer> neighbors = G.adj(queue.removeFirst());
             for (Integer n : neighbors) {
-                if (visitedV[n]++ == 0) queue.push(v);
+                if (visitedV[n]++ == 0) queue.addLast(v);
             }
         }
         // BFS from w until LCA or root is reached
-        queue.push(w);
+        queue.addLast(w);
         while (!queue.isEmpty()) {
-            for (Integer n : G.adj(queue.pop())) {
-                if (visitedV[n] > 0) return n;
+            for (Integer n : G.adj(queue.removeFirst())) {
+                if (visitedW[n]++ == 0) {
+                    if (visitedV[n] > 0) return n;
+                    queue.addLast(n);
+                }
             }
         }
         // if no intersection, return -1
@@ -79,8 +85,7 @@ public class SAP {
             if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
         });
 
-        int[] distV = new int[G.V() - 1];
-        int[] distW = new int[G.V() - 1];
+        int[] distV = new int[G.V()], distW = new int[G.V()];
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         // add v IDs to queue and BFS to root
         for (Integer ID : v) {
@@ -90,7 +95,10 @@ public class SAP {
         while (!queue.isEmpty()) {
             int current = queue.pop();
             for (Integer n : G.adj(current)) {
-                if (distV[n] == 0) distV[n] = distV[current] + 1;
+                if (distV[n] == 0) {
+                    distV[n] = distV[current] + 1;
+                    queue.addLast(n);
+                }
             }
         }
         // Check if w IDs were reached in v's BFS.
@@ -101,11 +109,12 @@ public class SAP {
             queue.push(ID);
         }
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 if (distW[n] == 0) {
                     if (distV[n] != 0) return distV[n] + (distW[current] + 1);
                     distW[n] = distW[current] + 1;
+                    queue.addLast(n);
                 }
             }
         }
@@ -123,19 +132,19 @@ public class SAP {
             if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
         });
 
-        int[] ancestorsV = new int[G.V() - 1];
-        int[] ancestorsW = new int[G.V() - 1];
+        int[] ancestorsV = new int[G.V()], ancestorsW = new int[G.V()];
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         // process v IDs into queue, marking all processed ID's as > 0
         for (Integer ID : v) {
             ancestorsV[ID]++;
-            queue.push(ID);
+            queue.addLast(ID);
         }
         // perform BFS on w
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 ancestorsV[n]++;
+                queue.addLast(n);
             }
         }
         // process w IDs, checking for LCA in ancestorsV
@@ -146,10 +155,11 @@ public class SAP {
         }
         // perform BFS on w until LCA found or root
         while (!queue.isEmpty()) {
-            int current = queue.pop();
+            int current = queue.removeFirst();
             for (Integer n : G.adj(current)) {
                 if (ancestorsW[n]++ == 0) {
                     if (ancestorsV[n] != 0) return n;
+                    queue.addLast(n);
                 }
             }
         }
