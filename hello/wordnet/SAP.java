@@ -1,174 +1,146 @@
 package wordnet;
 
 import edu.princeton.cs.algs4.Digraph;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdIn;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Iterator;
 
 public class SAP {
-    Digraph G;
+    private final Digraph G;
 
     public SAP(Digraph G) {
-        if (G == null) throw new IllegalArgumentException();
+        if (G == null) throw new IllegalArgumentException("null arg");
         this.G = G;
-    } // constructor
+    } // constructor()
 
     public int length(int v, int w) {
         if (v < 0 || v >= G.V() || w < 0 || w >= G.V())
-            throw new IllegalArgumentException("Vertices must be from 0 to " + (G.V() - 1));
+            throw new IllegalArgumentException("arg/s out of range");
         if (v == w) return 0;
-
-        int[] visitedV = new int[G.V()], visitedW = new int[G.V()];
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        visitedV[v] = 0;
-        visitedW[w] = 0;
-        queue.addLast(v);
-        // BFS to root for v
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                if (visitedV[n] == 0) {
-                    visitedV[n] = visitedV[current] + 1;
-                }
+        int[] distV = new int[G.V()], distW = new int[G.V()];
+        Arrays.fill(distV, -1);
+        Arrays.fill(distW, -1);
+        distV[v] = 0;
+        distW[w] = 0;
+        ArrayDeque<Integer> queueV = new ArrayDeque<>(), queueW = new ArrayDeque<>();
+        queueV.offer(v);
+        queueW.offer(w);
+        while (!queueV.isEmpty() || !queueW.isEmpty()) {
+            if (!queueV.isEmpty()) {
+                int resp = distanceBFS(queueV, distV, distW);
+                if (resp != -1) return resp;
+            }
+            if (!queueW.isEmpty()) {
+                int resp = distanceBFS(queueW, distW, distV);
+                if (resp != -1) return resp;
             }
         }
-
-        queue.addLast(w);
-        // BFS for w until LCA is found or root
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                if (visitedV[n] > 0) return visitedV[n] + ++visitedW[current];
-                else visitedW[n] = visitedW[current] + 1;
-                queue.addLast(n);
-            }
-        }
-        // if no LCA return -1
         return -1;
     } // length()
+
+    private int distanceBFS(ArrayDeque<Integer> queue, int[] distA, int[] distB) {
+        int prev = queue.poll();
+        for (Integer ID : G.adj(prev)) {
+            if (distA[ID] == -1) {
+                if (distB[ID] != -1) return distB[ID] + distA[prev] + 1;
+                else distA[ID] = distA[prev] + 1;
+                queue.offer(ID);
+            }
+        }
+        return -1;
+    } // distanceBFS()
 
     public int ancestor(int v, int w) {
         if (v < 0 || v >= G.V() || w < 0 || w >= G.V())
-            throw new IllegalArgumentException("Vertices must be from 0 to " + (G.V() - 1));
-        if (v == w) return v;
-
-        int[] visitedV = new int[G.V()], visitedW = new int[G.V()];
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        visitedV[v] = 1;
-        queue.addLast(v);
-        // BFS from v to root
-        while (!queue.isEmpty()) {
-            Iterable<Integer> neighbors = G.adj(queue.removeFirst());
-            for (Integer n : neighbors) {
-                if (visitedV[n]++ == 0) queue.addLast(v);
+            throw new IllegalArgumentException("arg/s out of range");
+        boolean[] markedV = new boolean[G.V()], markedW = new boolean[G.V()];
+        markedV[v] = true;
+        markedW[w] = true;
+        ArrayDeque<Integer> queueV = new ArrayDeque<>(), queueW = new ArrayDeque<>();
+        queueV.offer(v);
+        queueW.offer(w);
+        while (!queueV.isEmpty() || !queueW.isEmpty()) {
+            if (!queueV.isEmpty()) {
+                int resp = ancestorBFS(queueV, markedV, markedW);
+                if (resp != -1) return resp;
+            }
+            if (!queueW.isEmpty()) {
+                int resp = ancestorBFS(queueW, markedW, markedV);
+                if (resp != -1) return resp;
             }
         }
-        // BFS from w until LCA or root is reached
-        queue.addLast(w);
-        while (!queue.isEmpty()) {
-            for (Integer n : G.adj(queue.removeFirst())) {
-                if (visitedW[n]++ == 0) {
-                    if (visitedV[n] > 0) return n;
-                    queue.addLast(n);
-                }
-            }
-        }
-        // if no intersection, return -1
         return -1;
     } // ancestor()
-
-    public int length(Iterable<Integer> v, Iterable<Integer> w) {
-        // null args checks
-        if (v == null || w == null) throw new IllegalArgumentException("null arg/s");
-        v.forEach((vertex) -> {
-            if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
-        });
-        w.forEach((vertex) -> {
-            if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
-        });
-
-        int[] distV = new int[G.V()], distW = new int[G.V()];
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        // add v IDs to queue and BFS to root
-        for (Integer ID : v) {
-            distV[ID] = 0;
-            queue.addLast(ID);
-        }
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                if (distV[n] == 0) {
-                    distV[n] = distV[current] + 1;
-                    queue.addLast(n);
-                }
-            }
-        }
-        // Check if w IDs were reached in v's BFS.
-        // If no LCA, add to queue and perform BFS until LCA is found
-        for (Integer ID : w) {
-            if (distV[ID] != 0) return distV[ID];
-            distW[ID] = 0;
-            queue.addLast(ID);
-        }
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                if (distW[n] == 0) {
-                    if (distV[n] != 0) return distV[n] + (distW[current] + 1);
-                    distW[n] = distW[current] + 1;
-                    queue.addLast(n);
-                }
-            }
-        }
-        // if no intersection, return -1
-        return -1;
-    } // length()
 
     public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
-        // null args checks
-        if (v == null || w == null) throw new IllegalArgumentException("null arg/s");
-        v.forEach((vertex) -> {
-            if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
+        if (!validateVertices(v, w)) throw new IllegalArgumentException("invalid arg/s");
+        boolean[] markedV = new boolean[G.V()], markedW = new boolean[G.V()];
+        ArrayDeque<Integer> queueV = new ArrayDeque<>(), queueW = new ArrayDeque<>();
+        v.forEach((ID) -> {
+            queueV.offer(ID);
+            markedV[ID] = true;
         });
-        w.forEach((vertex) -> {
-            if (vertex == null) throw new IllegalArgumentException("Iterable contains null arg/s");
+        w.forEach((ID) -> {
+            queueW.offer(ID);
+            markedW[ID] = true;
         });
-
-        int[] ancestorsV = new int[G.V()], ancestorsW = new int[G.V()];
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        // process v IDs into queue, marking all processed ID's as > 0
-        for (Integer ID : v) {
-            ancestorsV[ID]++;
-            queue.addLast(ID);
-        }
-        // perform BFS on w
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                ancestorsV[n]++;
-                queue.addLast(n);
+        while (!queueV.isEmpty() || !queueW.isEmpty()) {
+            if (!queueV.isEmpty()) {
+                int resp = ancestorBFS(queueV, markedV, markedW);
+                if (resp != -1) return resp;
+            }
+            if (!queueW.isEmpty()) {
+                int resp = ancestorBFS(queueW, markedW, markedV);
+                if (resp != -1) return resp;
             }
         }
-        // process w IDs, checking for LCA in ancestorsV
-        for (Integer ID : w) {
-            if (ancestorsV[ID] != 0) return ID;
-            ancestorsW[ID]++;
-            queue.addLast(ID);
-        }
-        // perform BFS on w until LCA found or root
-        while (!queue.isEmpty()) {
-            int current = queue.removeFirst();
-            for (Integer n : G.adj(current)) {
-                if (ancestorsW[n]++ == 0) {
-                    if (ancestorsV[n] != 0) return n;
-                    queue.addLast(n);
-                }
-            }
-        }
-        // if no LCA found, return -1
         return -1;
     } // ancestor()
 
-    public static void main(String[] args) {
+    private int ancestorBFS(ArrayDeque<Integer> queue, boolean[] markedA, boolean[] markedB) {
+        int prev = queue.poll();
+        for (Integer ID : G.adj(prev)) {
+            if (!markedA[ID]) {
+                if (markedB[ID]) return ID;
+                queue.offer(ID);
+                markedA[ID] = true;
+            }
+        }
+        return -1;
+    } // ancestorBFS()
 
+    private boolean validateVertices(Iterable<Integer> v, Iterable<Integer> w) {
+        Iterator<Integer> iterV = v.iterator();
+        Iterator<Integer> iterW = w.iterator();
+        while (iterV.hasNext() || iterW.hasNext()) {
+            if (iterV.hasNext()) {
+                Integer next = iterV.next();
+                if (next == null || next < 0 || next >= G.V()) return false;
+            }
+            if (iterW.hasNext()) {
+                Integer next = iterW.next();
+                if (next == null || next < 0 || next >= G.V()) return false;
+            }
+        }
+        return true;
+    }
+
+    public static void main(String[] args) {
+        In in = new In(args[0]);
+        Digraph G = new Digraph(in);
+        SAP sap = new SAP(G);
+        while (!StdIn.isEmpty()) {
+            int V = StdIn.readInt();
+            int W = StdIn.readInt();
+            int length = sap.length(V, W);
+            int ancestor = sap.ancestor(V, W);
+            StdOut.printf("Length = %d Ancestor = %d\n", length, ancestor);
+            StdOut.printf("VtoAncestor = %d WtoAncestor = %d\n", sap.length(V, 0),
+                          sap.length(W, 0));
+        }
     }
 } // SAP class
