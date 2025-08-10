@@ -42,6 +42,33 @@ public class SAP {
         return -1;
     } // length()
 
+    public int length(Iterable<Integer> v, Iterable<Integer> w) {
+        if (!validateVertices(v, w)) throw new IllegalArgumentException("invalid arg/s");
+        int[] distV = new int[G.V()], distW = new int[G.V()];
+        Arrays.fill(distV, -1);
+        Arrays.fill(distW, -1);
+        ArrayDeque<Integer> queueV = new ArrayDeque<>(), queueW = new ArrayDeque<>();
+        v.forEach((ID) -> {
+            distV[ID] = 0;
+            queueV.offer(ID);
+        });
+        w.forEach((ID) -> {
+            distW[ID] = 0;
+            queueW.offer(ID);
+        });
+        while (!queueV.isEmpty() || !queueW.isEmpty()) {
+            if (!queueV.isEmpty()) {
+                int resp = distanceBFS(queueV, distV, distW);
+                if (resp != -1) return resp;
+            }
+            if (!queueW.isEmpty()) {
+                int resp = distanceBFS(queueW, distW, distV);
+                if (resp != -1) return resp;
+            }
+        }
+        return -1;
+    } // length()
+
     private int distanceBFS(ArrayDeque<Integer> queue, int[] distA, int[] distB) {
         int prev = queue.poll();
         for (Integer ID : G.adj(prev)) {
@@ -127,7 +154,7 @@ public class SAP {
             }
         }
         return true;
-    }
+    } // validateVertices()
 
     public static void main(String[] args) {
         In in = new In(args[0]);
@@ -139,8 +166,7 @@ public class SAP {
             int length = sap.length(V, W);
             int ancestor = sap.ancestor(V, W);
             StdOut.printf("Length = %d Ancestor = %d\n", length, ancestor);
-            StdOut.printf("VtoAncestor = %d WtoAncestor = %d\n", sap.length(V, 0),
-                          sap.length(W, 0));
         }
-    }
+    } // main()
+
 } // SAP class

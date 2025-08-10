@@ -12,7 +12,8 @@ import java.util.Map;
 public class WordNet {
     private Map<Integer, ArrayList<String>> synMap = new HashMap<>();
     private Map<String, ArrayList<Integer>> nounMap = new HashMap<>();
-    private Digraph rootedDAG;
+    private Digraph G;
+    private SAP sap;
 
     public WordNet(String synsets, String hypernyms) {
         if (synsets == null || hypernyms == null) throw new IllegalArgumentException("Null arg/s");
@@ -20,15 +21,17 @@ public class WordNet {
         processSynsets(synsets);
 
         // init rootedDAG with vertex count from synset
-        rootedDAG = new Digraph(synMap.size());
+        G = new Digraph(synMap.size());
 
         processHypernyms(hypernyms);
 
         boolean validDAG = false;
         for (Integer ID : synMap.keySet()) {
-            if (rootedDAG.outdegree(ID) == 0) validDAG = true;
+            if (G.outdegree(ID) == 0) validDAG = true;
         }
         if (!validDAG) throw new IllegalArgumentException("Invalid synsets");
+
+        sap = new SAP(G);
     } // constructor
 
     private void processSynsets(String synsets) {
@@ -77,7 +80,7 @@ public class WordNet {
                 int v = Integer.parseInt(set[0]);
                 for (int i = 1; i < set.length; i++) {
                     int hID = Integer.parseInt(set[i]);
-                    rootedDAG.addEdge(v, hID);
+                    G.addEdge(v, hID);
                 }
             }
         }
@@ -98,14 +101,18 @@ public class WordNet {
     public int distance(String nounA, String nounB) {
         if (nounA == null || nounB == null) throw new IllegalArgumentException("Null arg/s");
         if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException("Invalid arg/s");
-        return -1;
+        return sap.length(nounMap.get(nounA), nounMap.get(nounB));
     } // distance()
 
     public String sap(String nounA, String nounB) {
         if (nounA == null || nounB == null) throw new IllegalArgumentException("Null arg/s");
         if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException("Invalid arg/s");
-
-        return null;
+        int ancestralID = sap.ancestor(nounMap.get(nounA), nounMap.get(nounB));
+        String ancestor = "";
+        for (String noun : synMap.get(ancestralID)) {
+            ancestor += noun + " ";
+        }
+        return ancestor.strip();
     } // sap()
 
     public static void main(String[] args) {
@@ -114,7 +121,7 @@ public class WordNet {
                 "/home/Alec/repos/Princeton-Algorithms-Part-1/hello/wordnet/hypernyms.txt");
 
         System.out.println(test.isNoun("'hood"));
-        System.out.println("V: " + test.rootedDAG.V() + " E: " + test.rootedDAG.E());
+        System.out.println("V: " + test.G.V() + " E: " + test.G.E());
     } // main()
 
 } // WordNet class
