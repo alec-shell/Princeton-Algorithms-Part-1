@@ -1,127 +1,109 @@
 package wordnet;
 
 import edu.princeton.cs.algs4.Digraph;
+import edu.princeton.cs.algs4.In;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 public class WordNet {
-    private Map<Integer, ArrayList<String>> synMap = new HashMap<>();
-    private Map<String, ArrayList<Integer>> nounMap = new HashMap<>();
     private Digraph G;
+    private Map<Integer, String> synMap = new HashMap<>();
+    private Map<String, HashSet<Integer>> nounMap = new HashMap<>();
     private SAP sap;
 
     public WordNet(String synsets, String hypernyms) {
         if (synsets == null || hypernyms == null) throw new IllegalArgumentException("Null arg/s");
+        In syn = new In(synsets);
+        In hyper = new In(hypernyms);
 
-        processSynsets(synsets);
+        int V = processSynset(syn);
 
-        // init rootedDAG with vertex count from synset
-        G = new Digraph(synMap.size());
+        G = new Digraph(V);
 
-        processHypernyms(hypernyms);
+        if (!processHypernyms(hyper)) throw new IllegalArgumentException("DAG must have one root");
 
-        boolean validDAG = false;
+        int[] markers = new int[V];
         for (Integer ID : synMap.keySet()) {
-            if (G.outdegree(ID) == 0) validDAG = true;
+            if (cycleDetection(markers, ID))
+                throw new IllegalArgumentException("Cycle/s detected in DAG");
         }
-        if (!validDAG) throw new IllegalArgumentException("Invalid synsets");
 
         sap = new SAP(G);
-    } // constructor
+    } // constructor()
 
-    private void processSynsets(String synsets) {
-        try {
-            BufferedReader file = new BufferedReader(new FileReader(synsets));
-
-            String line;
-            while ((line = file.readLine()) != null) {
-                splitSynsets(line);
-            }
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
-    } // processSynsets()
-
-    private void splitSynsets(String line) {
-        String[] info = line.split(",");
-        int id = Integer.parseInt(info[0]);
-        // split synsets
-        String[] setArray = info[1].strip().split(" ");
-        ArrayList<String> setList = new ArrayList<>();
-        // iterate through nouns, assigning to setMap
-        for (String s : setArray) {
-            setList.add(s);
-            // add or update nounMap with noun IDs
-            if (nounMap.containsKey(s)) {
-                ArrayList<Integer> currentList = nounMap.get(s);
-                currentList.add(id);
-                nounMap.replace(s, currentList);
-            }
-            ArrayList<Integer> newList = new ArrayList<>();
-            newList.add(id);
-            nounMap.put(s, newList);
-        }
-        synMap.put(id, setList);
-    } // splitSynsets()
-
-    private void processHypernyms(String hypernyms) {
-        try {
-            BufferedReader file = new BufferedReader(new FileReader(hypernyms));
-            // split ids and hypernyms
-            String line;
-            while ((line = file.readLine()) != null) {
-                String[] set = line.split(",");
-                int v = Integer.parseInt(set[0]);
-                for (int i = 1; i < set.length; i++) {
-                    int hID = Integer.parseInt(set[i]);
-                    G.addEdge(v, hID);
+    private int processSynset(In syn) {
+        int vertices = 0;
+        while (!syn.isEmpty()) {
+            vertices++;
+            String[] line = syn.readLine().split(",");
+            int ID = Integer.parseInt(line[0]);
+            synMap.put(ID, line[1]);
+            String[] nouns = line[1].strip().split(" ");
+            for (String noun : nouns) {
+                HashSet<Integer> IDs;
+                if (!nounMap.containsKey(noun)) {
+                    IDs = new HashSet<>();
+                    IDs.add(ID);
+                    nounMap.put(noun, IDs);
+                }
+                else {
+                    IDs = nounMap.get(noun);
+                    IDs.add(ID);
+                    nounMap.replace(noun, IDs);
                 }
             }
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(e.getMessage());
+        return vertices;
+    } // processSynset()
+
+    private boolean processHypernyms(In hyper) {
+        // single root check
+        int rootCount = 0;
+        while (!hyper.isEmpty()) {
+            String[] IDs = hyper.readLine().split(",");
+            if (IDs.length == 1) rootCount++;
+            int ID = Integer.parseInt(IDs[0].strip());
+            for (int i = 1; i < IDs.length; i++) G.addEdge(ID, Integer.parseInt(IDs[i].strip()));
         }
+        return rootCount == 1;
     } // processHypernyms()
+
+    private boolean cycleDetection(int[] marked, int v) {
+        if (marked[v] == 1) return true;
+        if (marked[v] == 2) return false;
+        marked[v] = 1;
+        for (int n : G.adj(v)) {
+            if (!cycleDetection(marked, n)) return true;
+        }
+        marked[v] = 2;
+        return false;
+    } // cycleDetection()
 
     public Iterable<String> nouns() {
         return nounMap.keySet();
     } // nouns()
 
-    public boolean isNoun(String word) {
-        if (word == null) throw new IllegalArgumentException("Null arg");
-        return nounMap.containsKey(word);
-    } // isNoun()
+    public boolean isNoun(String noun) {
+        return nounMap.containsKey(noun);
+    } // isNoun
 
     public int distance(String nounA, String nounB) {
-        if (nounA == null || nounB == null) throw new IllegalArgumentException("Null arg/s");
-        if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException("Invalid arg/s");
+        if (nounA == null || nounB == null || !isNoun(nounA) || !isNoun(nounB))
+            throw new IllegalArgumentException("Invalid arg/s");
         return sap.length(nounMap.get(nounA), nounMap.get(nounB));
-    } // distance()
+    } // distance
 
     public String sap(String nounA, String nounB) {
-        if (nounA == null || nounB == null) throw new IllegalArgumentException("Null arg/s");
-        if (!isNoun(nounA) || !isNoun(nounB)) throw new IllegalArgumentException("Invalid arg/s");
-        int ancestralID = sap.ancestor(nounMap.get(nounA), nounMap.get(nounB));
-        String ancestor = "";
-        for (String noun : synMap.get(ancestralID)) {
-            ancestor += noun + " ";
-        }
-        return ancestor.strip();
+        if (nounA == null || nounB == null || !isNoun(nounA) || !isNoun(nounB))
+            throw new IllegalArgumentException("Invalid arg/s");
+        int ancestorID = sap.ancestor(nounMap.get(nounA), nounMap.get(nounB));
+        return synMap.get(ancestorID);
     } // sap()
 
     public static void main(String[] args) {
-        WordNet test = new WordNet(
-                "/home/Alec/repos/Princeton-Algorithms-Part-1/hello/wordnet/synsets.txt",
-                "/home/Alec/repos/Princeton-Algorithms-Part-1/hello/wordnet/hypernyms.txt");
 
-        System.out.println(test.isNoun("'hood"));
-        System.out.println("V: " + test.G.V() + " E: " + test.G.E());
     } // main()
 
 } // WordNet class
